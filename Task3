@@ -1,0 +1,107 @@
+/* inventory Management */
+
+import tkinter as tk
+from tkinter import messagebox, simpledialog
+import json
+import os
+
+class InventoryManager:
+    def __init__(self, master):
+        self.master = master
+        self.master.title("Inventory Management System")
+        
+        self.products = {}
+        self.load_data()
+
+        # GUI elements
+        self.label = tk.Label(master, text="Inventory Management", font=("Arial", 16))
+        self.label.pack(pady=10)
+
+        self.product_name_label = tk.Label(master, text="Product Name:")
+        self.product_name_label.pack()
+        self.product_name_entry = tk.Entry(master)
+        self.product_name_entry.pack()
+
+        self.quantity_label = tk.Label(master, text="Quantity:")
+        self.quantity_label.pack()
+        self.quantity_entry = tk.Entry(master)
+        self.quantity_entry.pack()
+
+        self.add_button = tk.Button(master, text="Add Product", command=self.add_product)
+        self.add_button.pack(pady=5)
+
+        self.edit_button = tk.Button(master, text="Edit Product", command=self.edit_product)
+        self.edit_button.pack(pady=5)
+
+        self.delete_button = tk.Button(master, text="Delete Product", command=self.delete_product)
+        self.delete_button.pack(pady=5)
+
+        self.report_button = tk.Button(master, text="Generate Report", command=self.generate_report)
+        self.report_button.pack(pady=5)
+
+    def load_data(self):
+        if os.path.exists("inventory.json"):
+            with open("inventory.json", "r") as file:
+                self.products = json.load(file)
+
+    def save_data(self):
+        with open("inventory.json", "w") as file:
+            json.dump(self.products, file)
+
+    def add_product(self):
+        name = self.product_name_entry.get()
+        quantity = self.quantity_entry.get()
+        
+        if not name or not quantity.isdigit():
+            messagebox.showerror("Error", "Invalid input. Please enter valid product name and quantity.")
+            return
+        
+        self.products[name] = int(quantity)
+        self.save_data()
+        messagebox.showinfo("Success", f"Product '{name}' added with quantity {quantity}.")
+        self.clear_entries()
+
+    def edit_product(self):
+        name = self.product_name_entry.get()
+        quantity = self.quantity_entry.get()
+
+        if name not in self.products:
+            messagebox.showerror("Error", "Product not found.")
+            return
+        
+        if not quantity.isdigit():
+            messagebox.showerror("Error", "Invalid quantity. Please enter a valid number.")
+            return
+
+        self.products[name] = int(quantity)
+        self.save_data()
+        messagebox.showinfo("Success", f"Product '{name}' updated to quantity {quantity}.")
+        self.clear_entries()
+
+    def delete_product(self):
+        name = self.product_name_entry.get()
+
+        if name in self.products:
+            del self.products[name]
+            self.save_data()
+            messagebox.showinfo("Success", f"Product '{name}' deleted.")
+        else:
+            messagebox.showerror("Error", "Product not found.")
+        self.clear_entries()
+
+    def generate_report(self):
+        low_stock = {name: qty for name, qty in self.products.items() if qty < 5}
+        report = "\n".join([f"{name}: {qty}" for name, qty in low_stock.items()])
+        if report:
+            messagebox.showinfo("Low Stock Report", report)
+        else:
+            messagebox.showinfo("Low Stock Report", "No low stock items.")
+
+    def clear_entries(self):
+        self.product_name_entry.delete(0, tk.END)
+        self.quantity_entry.delete(0, tk.END)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app = InventoryManager(root)
+    root.mainloop()
