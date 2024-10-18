@@ -1,0 +1,110 @@
+/*Library Management System*/
+
+import json
+import os
+from datetime import datetime, timedelta
+
+class LibraryManager:
+    def __init__(self):
+        self.library = []
+        self.load_data()
+
+    def load_data(self):
+        if os.path.exists("library.json"):
+            with open("library.json", "r") as file:
+                self.library = json.load(file)
+
+    def save_data(self):
+        with open("library.json", "w") as file:
+            json.dump(self.library, file)
+
+    def add_item(self, title, author, category):
+        item = {
+            "title": title,
+            "author": author,
+            "category": category,
+            "checked_out": False,
+            "due_date": None
+        }
+        self.library.append(item)
+        self.save_data()
+        print(f"Added: {item}")
+
+    def checkout_item(self, title):
+        for item in self.library:
+            if item["title"].lower() == title.lower() and not item["checked_out"]:
+                item["checked_out"] = True
+                item["due_date"] = (datetime.now() + timedelta(days=14)).strftime("%Y-%m-%d")
+                self.save_data()
+                print(f"Checked out: {item['title']}, due date: {item['due_date']}")
+                return
+        print("Item not found or already checked out.")
+
+    def return_item(self, title):
+        for item in self.library:
+            if item["title"].lower() == title.lower() and item["checked_out"]:
+                item["checked_out"] = False
+                overdue_days = (datetime.now() - datetime.strptime(item["due_date"], "%Y-%m-%d")).days
+                if overdue_days > 0:
+                    fine = overdue_days * 1.00  # $1 per day
+                    print(f"Returned: {item['title']}. Overdue fine: ${fine:.2f}")
+                else:
+                    print(f"Returned: {item['title']}. No fine.")
+                item["due_date"] = None
+                self.save_data()
+                return
+        print("Item not found or not checked out.")
+
+    def search_item(self, search_term):
+        results = [item for item in self.library if search_term.lower() in item["title"].lower() or
+                   search_term.lower() in item["author"].lower() or
+                   search_term.lower() in item["category"].lower()]
+        return results
+
+    def display_items(self):
+        for item in self.library:
+            status = "Available" if not item["checked_out"] else f"Checked out, due date: {item['due_date']}"
+            print(f"{item['title']} by {item['author']} [{item['category']}]: {status}")
+
+def main():
+    library_manager = LibraryManager()
+
+    while True:
+        print("\n--- Library Management System ---")
+        print("1. Add Item")
+        print("2. Checkout Item")
+        print("3. Return Item")
+        print("4. Search Item")
+        print("5. Display All Items")
+        print("6. Exit")
+
+        choice = input("Select an option: ")
+
+        if choice == '1':
+            title = input("Enter title: ")
+            author = input("Enter author: ")
+            category = input("Enter category: ")
+            library_manager.add_item(title, author, category)
+        elif choice == '2':
+            title = input("Enter title to checkout: ")
+            library_manager.checkout_item(title)
+        elif choice == '3':
+            title = input("Enter title to return: ")
+            library_manager.return_item(title)
+        elif choice == '4':
+            search_term = input("Enter title, author, or category to search: ")
+            results = library_manager.search_item(search_term)
+            if results:
+                for item in results:
+                    print(f"{item['title']} by {item['author']} [{item['category']}]")
+            else:
+                print("No items found.")
+        elif choice == '5':
+            library_manager.display_items()
+        elif choice == '6':
+            break
+        else:
+            print("Invalid option. Please try again.")
+
+if __name__ == "__main__":
+    main()
